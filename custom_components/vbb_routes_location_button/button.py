@@ -22,7 +22,18 @@ class VBBLocationRefreshButton(CoordinatorEntity[VBBRoutesLocationCoordinator], 
         self.entry = entry
         self._attr_name = f"{entry.title} Refresh"
         self._attr_unique_id = f"{entry.entry_id}_refresh"
-        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry.entry_id)}, name=entry.title, manufacturer="VBB", model="Location route query")
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
+            manufacturer="VBB",
+            model="Location route query",
+        )
+
+    @property
+    def available(self) -> bool:
+        # The button must stay available even before the first successful route query.
+        # Otherwise the first manual refresh cannot be triggered.
+        return True
 
     async def async_press(self) -> None:
         await self.coordinator.async_request_refresh()
