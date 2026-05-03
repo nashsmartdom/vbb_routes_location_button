@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Any
@@ -15,11 +16,14 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_DESTINATION_ID,
     CONF_DESTINATION_NAME,
+    CONF_LOCATION_UPDATE_WAIT_SECONDS,
     CONF_MAX_TRANSFERS,
     CONF_MIN_DEPART_OFFSET_MIN,
+    CONF_NOTIFY_SERVICE,
     CONF_ORIGIN_ENTITY,
     CONF_RESULTS,
     CONF_TOP_N,
+    DEFAULT_LOCATION_UPDATE_WAIT_SECONDS,
     DEFAULT_MAX_TRANSFERS,
     DEFAULT_MIN_DEPART_OFFSET_MIN,
     DEFAULT_RESULTS,
@@ -110,7 +114,28 @@ class VBBRoutesLocationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
 
     async def _async_update_data(self) -> dict[str, Any]:
+        await self._request_location_update()
         return await self._fetch_routes()
+
+    async def _request_location_update(self) -> None:
+        notify_service = str(self.entry.data.get(CONF_NOTIFY_SERVICE, "") or "").strip()
+        wait_seconds = int(self.entry.data.get(CONF_LOCATION_UPDATE_WAIT_SECONDS, DEFAULT_LOCATION_UPDATE_WAIT_SECONDS))
+        if not notify_service:
+            return
+        if not notify_service.startswith("notify."):
+            notify_service = f"notify.{notify_service}"
+        domain, service = notify_service.split(".", 1)
+        await self.hass.services.async_call(
+            domain,
+            service,
+            {
+                "message": "request_location_update",
+                "data": {"command": "request_location_update"},
+            },
+            blocking=False,
+        )
+        if wait_seconds > 0:
+            await asyncio.sleep(wait_seconds)
 
     def _origin_coordinates(self) -> tuple[float, float, str]:
         entity_id = self.entry.data[CONF_ORIGIN_ENTITY]
