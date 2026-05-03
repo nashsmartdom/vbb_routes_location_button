@@ -1,6 +1,8 @@
 DOMAIN = "vbb_routes_location_button"
 
 CONF_ORIGIN_ENTITY = "origin_entity"
+CONF_NOTIFY_SERVICE = "notify_service"
+CONF_LOCATION_UPDATE_WAIT_SECONDS = "location_update_wait_seconds"
 CONF_DESTINATION_ID = "destination_id"
 CONF_DESTINATION_NAME = "destination_name"
 CONF_MIN_DEPART_OFFSET_MIN = "min_depart_offset_min"
@@ -10,6 +12,8 @@ CONF_TOP_N = "top_n"
 
 DEFAULT_NAME = "VBB Alisa Location"
 DEFAULT_ORIGIN_ENTITY = "device_tracker.alisa_phone"
+DEFAULT_NOTIFY_SERVICE = ""
+DEFAULT_LOCATION_UPDATE_WAIT_SECONDS = 7
 DEFAULT_DESTINATION_ID = "900130002"
 DEFAULT_DESTINATION_NAME = "S+U Pankow"
 DEFAULT_MIN_DEPART_OFFSET_MIN = 7
