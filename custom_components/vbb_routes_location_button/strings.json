@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "VBB Routes Location Button",
+        "description": "Manual VBB route query from a Home Assistant entity with latitude/longitude.",
+        "data": {
+          "name": "Name",
+          "origin_entity": "Origin entity with latitude/longitude",
+          "destination_id": "Destination stop ID",
+          "destination_name": "Destination name",
+          "min_depart_offset_min": "Minimum departure offset in minutes",
+          "max_transfers": "Maximum transfers",
+          "results": "Raw VBB results to request",
+          "top_n": "Number of route sensors"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This location route query is already configured."
+    }
+  }
+}
