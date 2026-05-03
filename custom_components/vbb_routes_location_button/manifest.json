@@ -1,0 +1,13 @@
+{
+  "domain": "vbb_routes_location_button",
+  "name": "VBB Routes Location Button",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/nashsmartdom/vbb_routes_location_button",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/nashsmartdom/vbb_routes_location_button/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
