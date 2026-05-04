@@ -14,7 +14,10 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
+    CONF_DESTINATION_ADDRESS,
     CONF_DESTINATION_ID,
+    CONF_DESTINATION_LAT,
+    CONF_DESTINATION_LON,
     CONF_DESTINATION_NAME,
     CONF_LOCATION_UPDATE_WAIT_SECONDS,
     CONF_MAX_TRANSFERS,
@@ -23,6 +26,9 @@ from .const import (
     CONF_ORIGIN_ENTITY,
     CONF_RESULTS,
     CONF_TOP_N,
+    DEFAULT_DESTINATION_ADDRESS,
+    DEFAULT_DESTINATION_LAT,
+    DEFAULT_DESTINATION_LON,
     DEFAULT_LOCATION_UPDATE_WAIT_SECONDS,
     DEFAULT_MAX_TRANSFERS,
     DEFAULT_MIN_DEPART_OFFSET_MIN,
@@ -130,10 +136,7 @@ class VBBRoutesLocationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         await self.hass.services.async_call(
             domain,
             service,
-            {
-                "message": "request_location_update",
-                "data": {"command": "request_location_update"},
-            },
+            {"message": "request_location_update", "data": {"command": "request_location_update"}},
             blocking=False,
         )
         if wait_seconds > 0:
@@ -151,6 +154,16 @@ class VBBRoutesLocationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         name = state.attributes.get("friendly_name") or entity_id
         return float(lat), float(lon), str(name)
 
+    def _destination_params(self, data: dict[str, Any]) -> dict[str, Any]:
+        destination_id = str(data.get(CONF_DESTINATION_ID, "") or "").strip()
+        if destination_id:
+            return {"to": destination_id}
+        return {
+            "to.latitude": float(data.get(CONF_DESTINATION_LAT, DEFAULT_DESTINATION_LAT)),
+            "to.longitude": float(data.get(CONF_DESTINATION_LON, DEFAULT_DESTINATION_LON)),
+            "to.address": data.get(CONF_DESTINATION_ADDRESS, DEFAULT_DESTINATION_ADDRESS),
+        }
+
     async def _fetch_routes(self) -> dict[str, Any]:
         d = self.entry.data
         now = datetime.now(TZ)
@@ -159,7 +172,8 @@ class VBBRoutesLocationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         max_transfers = int(d.get(CONF_MAX_TRANSFERS, DEFAULT_MAX_TRANSFERS))
         results = int(d.get(CONF_RESULTS, DEFAULT_RESULTS))
         top_n = int(d.get(CONF_TOP_N, DEFAULT_TOP_N))
-        params = {"from.latitude": lat, "from.longitude": lon, "from.address": origin_name, "to": d[CONF_DESTINATION_ID], "departure": (now + timedelta(minutes=min_offset)).isoformat(), "transfers": max_transfers, "results": results, "stopovers": "false", "remarks": "false", "language": "de"}
+        params = {"from.latitude": lat, "from.longitude": lon, "from.address": origin_name, "departure": (now + timedelta(minutes=min_offset)).isoformat(), "transfers": max_transfers, "results": results, "stopovers": "false", "remarks": "false", "language": "de"}
+        params.update(self._destination_params(d))
         try:
             async with self.session.get(VBB_JOURNEYS_URL, params=params, timeout=15) as response:
                 if response.status != 200:
