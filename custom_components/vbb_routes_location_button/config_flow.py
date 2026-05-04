@@ -53,9 +53,14 @@ EDITABLE_KEYS = [
 ]
 
 
-def build_schema(values: dict[str, Any] | None = None) -> vol.Schema:
+def build_schema(values: dict[str, Any] | None = None, *, include_name: bool = False) -> vol.Schema:
     values = values or {}
-    return vol.Schema(
+    schema: dict[Any, Any] = {}
+
+    if include_name:
+        schema[vol.Required(CONF_NAME, default=values.get(CONF_NAME, DEFAULT_NAME))] = str
+
+    schema.update(
         {
             vol.Required(CONF_ORIGIN_ENTITY, default=values.get(CONF_ORIGIN_ENTITY, DEFAULT_ORIGIN_ENTITY)): str,
             vol.Optional(CONF_NOTIFY_SERVICE, default=values.get(CONF_NOTIFY_SERVICE, DEFAULT_NOTIFY_SERVICE)): str,
@@ -86,6 +91,7 @@ def build_schema(values: dict[str, Any] | None = None) -> vol.Schema:
             ),
         }
     )
+    return vol.Schema(schema)
 
 
 class VBBRoutesLocationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -97,37 +103,44 @@ class VBBRoutesLocationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
-            name = user_input.pop(CONF_NAME)
-            dest_key = user_input.get(CONF_DESTINATION_ID) or user_input.get(CONF_DESTINATION_ADDRESS) or f"{user_input.get(CONF_DESTINATION_LAT)}_{user_input.get(CONF_DESTINATION_LON)}"
-            unique_id = f"loc_{user_input[CONF_ORIGIN_ENTITY]}_{dest_key}"
+            data = dict(user_input)
+            name = data.pop(CONF_NAME)
+            dest_key = data.get(CONF_DESTINATION_ID) or data.get(CONF_DESTINATION_ADDRESS) or f"{data.get(CONF_DESTINATION_LAT)}_{data.get(CONF_DESTINATION_LON)}"
+            unique_id = f"loc_{data[CONF_ORIGIN_ENTITY]}_{dest_key}"
             await self.async_set_unique_id(unique_id)
             self._abort_if_unique_id_configured()
-            return self.async_create_entry(title=name, data=user_input)
+            return self.async_create_entry(title=name, data=data)
 
-        schema = build_schema()
-        schema = schema.extend({vol.Required(CONF_NAME, default=DEFAULT_NAME): str})
-        return self.async_show_form(step_id="user", data_schema=schema, errors={})
+        return self.async_show_form(
+            step_id="user",
+            data_schema=build_schema(include_name=True),
+            errors={},
+        )
 
 
 class VBBRoutesLocationOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
+        self._config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
-            new_data = dict(self.config_entry.data)
+            new_data = dict(self._config_entry.data)
             for key in EDITABLE_KEYS:
                 if key in user_input:
                     new_data[key] = user_input[key]
 
             self.hass.config_entries.async_update_entry(
-                self.config_entry,
+                self._config_entry,
                 data=new_data,
                 options={},
             )
-            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            await self.hass.config_entries.async_reload(self._config_entry.entry_id)
             return self.async_create_entry(title="", data={})
 
-        values = dict(self.config_entry.data)
-        values.update(self.config_entry.options)
-        return self.async_show_form(step_id="init", data_schema=build_schema(values), errors={})
+        values = dict(self._config_entry.data)
+        values.update(self._config_entry.options)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=build_schema(values),
+            errors={},
+        )
