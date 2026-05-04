@@ -9,7 +9,10 @@ from homeassistant.const import CONF_NAME
 from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
+    CONF_DESTINATION_ADDRESS,
     CONF_DESTINATION_ID,
+    CONF_DESTINATION_LAT,
+    CONF_DESTINATION_LON,
     CONF_DESTINATION_NAME,
     CONF_LOCATION_UPDATE_WAIT_SECONDS,
     CONF_MAX_TRANSFERS,
@@ -18,7 +21,10 @@ from .const import (
     CONF_ORIGIN_ENTITY,
     CONF_RESULTS,
     CONF_TOP_N,
+    DEFAULT_DESTINATION_ADDRESS,
     DEFAULT_DESTINATION_ID,
+    DEFAULT_DESTINATION_LAT,
+    DEFAULT_DESTINATION_LON,
     DEFAULT_DESTINATION_NAME,
     DEFAULT_LOCATION_UPDATE_WAIT_SECONDS,
     DEFAULT_MAX_TRANSFERS,
@@ -37,7 +43,8 @@ class VBBRoutesLocationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
-            unique_id = f"loc_{user_input[CONF_ORIGIN_ENTITY]}_{user_input[CONF_DESTINATION_ID]}"
+            dest_key = user_input.get(CONF_DESTINATION_ID) or user_input.get(CONF_DESTINATION_ADDRESS) or f"{user_input.get(CONF_DESTINATION_LAT)}_{user_input.get(CONF_DESTINATION_LON)}"
+            unique_id = f"loc_{user_input[CONF_ORIGIN_ENTITY]}_{dest_key}"
             await self.async_set_unique_id(unique_id)
             self._abort_if_unique_id_configured()
             return self.async_create_entry(title=user_input[CONF_NAME], data=user_input)
@@ -48,8 +55,11 @@ class VBBRoutesLocationConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_ORIGIN_ENTITY, default=DEFAULT_ORIGIN_ENTITY): str,
                 vol.Optional(CONF_NOTIFY_SERVICE, default=DEFAULT_NOTIFY_SERVICE): str,
                 vol.Required(CONF_LOCATION_UPDATE_WAIT_SECONDS, default=DEFAULT_LOCATION_UPDATE_WAIT_SECONDS): vol.All(vol.Coerce(int), vol.Range(min=0, max=30)),
-                vol.Required(CONF_DESTINATION_ID, default=DEFAULT_DESTINATION_ID): str,
+                vol.Optional(CONF_DESTINATION_ID, default=DEFAULT_DESTINATION_ID): str,
                 vol.Required(CONF_DESTINATION_NAME, default=DEFAULT_DESTINATION_NAME): str,
+                vol.Optional(CONF_DESTINATION_ADDRESS, default=DEFAULT_DESTINATION_ADDRESS): str,
+                vol.Optional(CONF_DESTINATION_LAT, default=DEFAULT_DESTINATION_LAT): vol.Coerce(float),
+                vol.Optional(CONF_DESTINATION_LON, default=DEFAULT_DESTINATION_LON): vol.Coerce(float),
                 vol.Required(CONF_MIN_DEPART_OFFSET_MIN, default=DEFAULT_MIN_DEPART_OFFSET_MIN): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
                 vol.Required(CONF_MAX_TRANSFERS, default=DEFAULT_MAX_TRANSFERS): vol.All(vol.Coerce(int), vol.Range(min=0, max=5)),
                 vol.Required(CONF_RESULTS, default=DEFAULT_RESULTS): vol.All(vol.Coerce(int), vol.Range(min=3, max=40)),
