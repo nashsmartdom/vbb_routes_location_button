@@ -73,9 +73,11 @@ def normalize_leg(leg: dict[str, Any]) -> dict[str, Any]:
     line = leg.get("line") or {}
     line_name = line.get("name")
     product = line.get("product") or line.get("mode")
+    direction = leg.get("direction") or line.get("direction")
     if walking:
         line_name = "Fußweg"
         product = "walking"
+        direction = None
     bg, fg = get_line_colour(line_name, product)
     dep = parse_dt(leg.get("departure") or leg.get("plannedDeparture"))
     arr = parse_dt(leg.get("arrival") or leg.get("plannedArrival"))
@@ -87,7 +89,7 @@ def normalize_leg(leg: dict[str, Any]) -> dict[str, Any]:
     except (TypeError, ValueError):
         delay_min = 0
     duration_min = int((arr - dep).total_seconds() / 60) if dep and arr else None
-    return {"line": line_name, "product": product, "walking": walking, "origin": (leg.get("origin") or {}).get("name"), "destination": (leg.get("destination") or {}).get("name"), "departure": fmt_time(dep), "arrival": fmt_time(arr), "duration_min": duration_min, "delay_min": delay_min, "bg": bg, "fg": fg}
+    return {"line": line_name, "product": product, "walking": walking, "origin": (leg.get("origin") or {}).get("name"), "destination": (leg.get("destination") or {}).get("name"), "direction": direction, "departure": fmt_time(dep), "arrival": fmt_time(arr), "duration_min": duration_min, "delay_min": delay_min, "bg": bg, "fg": fg}
 
 
 def normalize_journey(journey: dict[str, Any], now: datetime):
